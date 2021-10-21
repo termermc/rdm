@@ -1,0 +1,32 @@
+// Packages database
+def PACKAGES = map()
+
+// Initalizes RDM
+func init {
+    local home = system_property("user.home")
+    home = home.concat("/.rdm/")
+    local packages = home.concat("packages/")
+    
+    if ![file_exists(home)] {
+        // Create home directory
+        create_directory(home)
+    }
+    
+    if ![file_exists(packages)] {
+        // Create packages directory, and subfolders
+        create_directory(packages)
+        create_directory(packages.concat("libs/"))
+    }
+    
+    if ![file_exists(home.concat("packages.json"))] {
+        // Create packages index
+        local pkgs = map()
+        pkgs->version = VERSION
+        pkgs->packages = map()
+        pkgs->repositories = array("https://raw.githubusercontent.com/termermc/rtfl-packages-oss/main/")
+        write_file(home.concat("packages.json"), pkgs.to_json(true))
+    }
+    
+    // Load packages from file
+    load_packages()
+}

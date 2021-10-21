@@ -1,0 +1,276 @@
+// Installs the provided packages in the current project directory
+// "pkgs" is a map, with the key being the package name, and the value as the package version
+// "choose_defaults" determines whether default options will be chosen instead of letting the user choose
+func rdm_install_packages_in_project(pkgs, choose_defaults) {
+    // Packages to fetch and already fetched
+	local to_fetch = pkgs
+	local fetched = map()
+    local fetch_count = 0
+
+	while [to_fetch.map_keys.array_length > 0] {
+		local pkg = to_fetch.map_keys[0]
+        local pkg_ver = to_fetch.map_values[0]
+        
+		local exists = repo_package_exists(pkg)
+		if exists {
+            log_info(concat("Installing package ", pkg.bold, "..."))
+
+			// Grab infos on package
+	        local infos = repo_package_info(pkg)
+
+	        // Check which repo has the latest
+	        local versions = map()
+            local version_names = repo_package_versions_from_info_array(infos)
+
+	        local i = 0
+	        local len = version_names.array_length
+	        while [i < len] {
+	            local ver = version_names[i]
+
+	            if ![versions.map_contains_key(ver)] {
+	                versions.map_put(ver, array())
+                }
+	                    
+	            local j = 0
+	            local ilen = infos.array_length
+
+	            while [j < ilen] {
+	                local info = infos[j]
+
+	                if info->versions.array_contains(ver) {
+	                    // Put info in version
+	                    versions.map_get(ver).array_add(info)
+	                }
+
+	                inc("j")
+	            }
+
+	            inc("i")
+	        }
+
+            local package = null
+	        local ver = null
+
+	        // Check if map has multiple versions in it
+	        local multi_ver = [version_names.array_length > 1]
+
+            // Check if latest version should be used
+            if [pkg_ver = "@latest"] {
+                multi_ver = false
+            }
+
+            local infos = null
+            local info = null
+
+	        if multi_ver {
+                local select_ver = true
+
+                // Check if specific version is specified
+                if ![pkg_ver = null] {
+                    select_ver = false
+
+                    // Check if version is available
+                    if ![version_names.array_contains(pkg_ver)] {
+                        log_error(concat("Could not find version ", pkg_ver.bold, " of package ", pkg.bold, " in any repositories"))
+                        exit(1)
+                    }
+
+                    ver = pkg_ver
+                    infos = versions.map_get(ver)
+                }
+
+                if select_ver {
+                    if choose_defaults {
+                        ver = version_names.highest
+                    }
+                    if ![choose_defaults] {
+                        // Allow selection of versions
+                        println("Multiple versions of this package are available:")
+
+                        // Print versions
+                        local i = 0
+                        local ver_names = version_names
+                        while [i < ver_names.array_length] {
+                            local ver_name = ver_names[i]
+                            local ver_infos = versions.map_get(ver_name)
+
+                            // Print number and name
+                            print(effect_bold, "[", i.add(1), "] ", effect_reset, ver_name)
+                            if [ver_infos.array_length > 1] {
+                                print(" (offered by ", ver_infos.array_length, " repositories)")
+                            }
+                            println()
+
+                            inc("i")						
+                        }
+
+                        // Wait for selection
+                        print("Select a version ID (default 1): ")
+                        open_terminal()
+                        local id_str = read_terminal().string_trim
+
+                        // Validate ID
+                        local id = selection_id_to_index(id_str, 1, 1, ver_names.array_length)
+
+                        if [id = null] {
+                            println("Invalid version ID")
+                            exit(1)
+                        }
+                                
+                        ver = version_names[id]
+                    }
+                }
+	        }
+            if ![multi_ver] {
+	            ver = version_names.highest
+
+                if ![pkg_ver = "?"] {
+                    if ![pkg_ver = ver] {
+                        if ![pkg_ver = "@latest"] {
+                            log_error(concat("Could not find version ", pkg_ver.bold, " of package ", pkg.bold, " in any repositories"))
+                            exit(1)
+                        }
+                    }
+                }
+	        }
+
+            infos = versions.map_get(ver)
+            info = infos[0]
+
+            if ![choose_defaults] {
+                if [infos.array_length > 1] {
+                    // Allow selection of repository
+                    println("Multiple repositories contain this package:")
+                            
+                    // Print repositories
+                    local i = 0
+                    while [i < infos.array_length] {
+                        local repo_name = infos[i]->repo->name
+
+                        // Print number and name
+                        println(effect_bold, "[", i.add(1), "] ", effect_reset, repo_name)
+
+                        inc("i")
+                            
+                    }
+
+                    // Wait for selection
+                    print("Select a repository ID (default 1): ")
+                    open_terminal()
+                    local id_str = read_terminal().string_trim
+
+                    // Validate ID
+                    local id = selection_id_to_index(id_str, 1, 1, infos.array_length)
+
+                    if [id = null] {
+                        println("Invalid repository ID")
+                        exit(1)
+                    }
+
+                    info = infos[id]
+                }
+            }
+
+            package = info
+
+            // Add unmet package dependencies
+            local deps = package->dependencies
+            local dep_names = deps.map_keys
+            local dep_vers = deps.map_values
+            local i = 0
+            local len = dep_names.array_length
+            while [i < len] {
+                local dname = dep_names[i]
+                local dver = dep_vers[i]
+
+                local fetched_ver = fetched.map_get(dname)
+                if ![fetched_ver = null] {
+                    if ![fetched_ver = dver] {
+                        log_warn(concat("Package ", dname.bold, " calls for version ", dver.bold, " of dependency ", dname.bold, ", but version ", fetched_ver.bold, " is already installed"))
+                    }
+                }
+
+                local to_fetch_ver = to_fetch.map_get(dname)
+                if ![to_fetch_ver = null] {
+                    if ![to_fetch_ver = dver] {
+                        log_warn(concat("Package ", dname.bold, " calls for version ", dver.bold, " of dependency ", dname.bold, ", but version ", to_fetch_ver.bold, " is already queued to be installed"))
+                    }
+                }
+
+                if [fetched_ver = null] {
+                    if [to_fetch_ver = null] {
+                        to_fetch.map_put(dname, dver)
+                    }
+                }
+
+                inc("i")
+            }
+
+	        // Install package
+            local out_name = concat(pkg, ".rtfl")
+            local type = package->type
+            if [type = "binary"] {
+                out_name = concat(pkg, ".rtfc")
+            }
+            local out_path = concat("libs/", out_name)
+            // Check if already exists
+            local overwrite = true
+            if file_exists(out_path) {
+                overwrite = false
+
+                if ![choose_defaults] {
+                    overwrite = prompt_bool("This package is already installed, do you want to replace it?")
+                }
+            }
+            if overwrite {
+                write_file(out_path, url(concat(package->package_url, ver)))
+            }
+
+	        // Remove package from to_fetch and add to fetched
+	        to_fetch.map_remove(pkg)
+            fetched.map_put(pkg, ver)
+            inc("fetch_count")
+		}
+		if ![exists] {
+			log_error(concat("Could not find package ", pkg.bold, " in any repositories"))
+			exit(1)
+		}
+	}
+
+    log_info(concat("Installed and fetched ", fetch_count.bold, " package(s)"))
+
+    return fetched
+}
+
+// Runs the provided project script
+func rdm_run_project_script(script_name) {
+	local script_path = null
+
+	local src_path = concat("scripts/", script_name, ".rtfl")
+	local bin_path = concat("scripts/", script_name, ".rtfc")
+	if file_exists(src_path) {
+		script_path = src_path
+	}
+	if file_exists(bin_path) {
+		script_path = bin_path
+	}
+
+	if [script_path = null] {
+		log_error(concat("No script with the name ", script_name.bold, " could be found in ", "scripts".bold))
+	}
+	if ![script_path = null] {
+        // Make extra arguments available to script
+		local args = array()
+        if [argslen > 1] {
+            args = arg2
+        }
+
+		error err {
+			load(script_path)
+		}
+		if ![err = "ok"] {
+			log_error(concat("Failed to execute script ", script_name.bold, ":"))
+			log_error(err)
+		}
+	}
+}

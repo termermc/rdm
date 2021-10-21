@@ -1,0 +1,131 @@
+// Handles commands
+func handle_command(cmd, args) {
+    local ok = false
+    
+    if [cmd = "help"] {
+        ok = true
+        print_help()
+    }
+    if [cmd = "version"] {
+        ok = true
+        println("You're running RDM version ", VERSION.bold)
+    }
+    if [cmd = "run"] {
+    	ok = true
+    
+    	local help = [args.array_length < 1]
+    	if help {
+    		println("Usage: rdm run <script>")
+
+            // Print available scripts
+            if is_directory("scripts/") {
+                local scripts = list_files("scripts/")
+                local len = scripts.array_length
+                if [len > 0] {
+                    println("Available scripts:")
+                    local i = 0
+                    while [i < len] {
+                        local script = scripts[i]
+
+                        if is_file(concat("scripts/", script)) {
+                            local ok = false
+
+                            if script.ends_with(".rtfl") {
+                                ok = true
+                            }
+                            if script.ends_with(".rtfc") {
+                                ok = true
+                            }
+
+                            if ok {
+                                local dot = script.index_of(".")
+                                println(script.substring(0, dot))
+                            }
+                        }
+
+                        inc("i")
+                    }
+                }
+            }
+    	}
+    	if ![help] {
+    		rdm_run_project_script(args[0])
+    	}
+    }
+    if [cmd = "init"] {
+        ok = true
+        
+        // Check if a project already exists
+        if file_exists("project.json") {
+            log_error(concat("Project already exists in this directory. To re-create, delete ", "project.json".bold))
+			exit(1)
+        }
+        if ![file_exists("project.json")] {
+            // Create files
+            create_directory("includes/")
+            create_directory("libs/")
+            create_directory("scripts/")
+            
+            if ![file_exists("main.rtfl")] {
+                write_file("main.rtfl", "// Project main script\n")
+            }
+            
+            // Create project JSON
+            local proj = map()
+            proj->name = prompt("Project name")
+            proj->version = prompt("Project version")
+            proj->dependencies = map()
+            
+            // Write project JSON
+            write_file("project.json", proj.to_json(true))
+        }
+    }
+    if [cmd = "install"] {
+		// Check for project.json
+		if ![file_exists("project.json")] {
+			log_error(concat("project.json".bold, " does not exist in this directory. To initialize a project, run ", "rdm init".bold))
+			exit(1)
+		}
+
+		// Read project JSON
+		local project_json = read_file("project.json").from_json
+
+		// Load all repos before fetching packages
+		load_repos()
+
+        // Create libs directory if it doesn't exist
+        if ![is_directory("libs/")] {
+            create_directory("libs/")
+        }
+
+    	local all = [args.array_length < 1]
+    	if all {
+			// Install all dependencies
+			rdm_install_packages_in_project(project_json->dependencies, false)
+    	}
+    	if ![all] {
+			local pkg_name = args[0]
+			local pkg_ver = "?"
+
+			if [args.array_length > 1] {
+				pkg_ver = args[1]
+			}
+
+			// Perform action
+			local pkgs = map()
+			pkgs.map_put(pkg_name, pkg_ver)
+			rdm_install_packages_in_project(pkgs, false)
+			
+			// Add dependency to project.json
+			project_json->dependencies.map_put(pkg_name, pkg_ver)
+
+			// Write new project.json
+			write_file("project.json", project_json.to_json(true))
+    	}
+		ok = true
+    }
+    
+    if ![ok] {
+        println("Unknown command ", cmd.bold, ". Try running ", "rdm help".bold, " to list all valid commands.")
+    }
+}

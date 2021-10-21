@@ -1,0 +1,52 @@
+func repeat(times, code) {
+	local i = 0
+	while [i < times] {
+		eval(code)
+		inc("i")
+	}
+}
+
+func contains(str, substr) {
+	return str.string_contains(substr)
+}
+func min {
+    local val = -1
+    if [arg1 > arg2] {
+        val = arg2
+    }
+    if ![arg1 > arg2] {
+        val = arg1
+    }
+    return val
+}
+func max {
+	local val = -1
+    if [arg1 > arg2] {
+        val = arg1
+    }
+    if ![arg1 > arg2] {
+        val = arg2
+    }
+    return val
+}
+func round(decimal) {
+    local arr = decimal.to_string.split("\.")
+    local num = arr[0].to_number
+    if [arr.array_length > 0] {
+    	local num2 = arr[1].to_number
+    	if [num2 > 4] {
+    		inc("num")
+    	}
+    }
+    return num.to_string
+}
+func round_string(decimal) {
+	return decimal.round
+}
+func append_file(file, content) {
+	write_file(file, content, true)
+}
+func prepend_file(file, content) {
+    local cont = concat(content, read_file(file))
+    write_file(file, cont)
+}

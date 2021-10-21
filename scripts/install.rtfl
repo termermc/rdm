@@ -1,0 +1,21 @@
+local user = system_property("user.name")
+
+if [user = "root"] {
+	log_info("Compiling...")
+	rdm_run_project_script("build")
+
+	log_info("Copying executable...")
+	exec("cp", "rdm.rtfc", "/usr/local/bin/")
+
+	log_info("Creating script...")
+	write_file("/usr/local/bin/rdm", "#!/bin/bash\nrtfl /usr/local/bin/rdm.rtfc $@")
+	exec("chmod", "+x", "/usr/local/bin/rdm")
+
+	log_info("Cleaning up...")
+	delete_file("rdm.rtfc")
+
+	log_info("Successfully installed RDM!")
+}
+if ![user = "root"] {
+	println("You must be root to run this script")
+}

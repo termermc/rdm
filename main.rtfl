@@ -1,0 +1,42 @@
+// Required libraries
+require("colors")
+require("logging")
+
+// Globals
+def VERSION = 1.0
+
+// Load includes
+load("includes/utils.rtfl")
+load("includes/url.rtfl")
+load("includes/actions.rtfl")
+load("includes/commands.rtfl")
+load("includes/packages.rtfl")
+load("includes/repos.rtfl")
+load("includes/input.rtfl")
+load("includes/init.rtfl")
+
+func print_help {
+    println("Welcome to RDM!")
+    println("Usage: rdm <command> [options] ...")
+    println("Commands:")
+    println("  help - Shows this message")
+    println("  version - Shows the version of RDM you're running")
+    println("  init - Initializes a new project in the current directory")
+    println("  run <script> - Runs a project script")
+    println("  install [package] - Installs a package in the current project, or installs all project dependencies")
+    println("  remove <package> - Removes a package in the current project")
+    println("  global <install/remove/list> <package> - Installs, removes, or lists globally installed packages")
+    println("  repo <add/remove/list> [repository URL] - Adds, removes, or lists package repositories")
+}
+
+// Check arguments
+if [args.array_length > 0] {
+    // Initializes RDM on every run (if need be)
+    init()
+    
+    // Handle command
+    handle_command(args[0], args.sub_array(1))
+}
+if [args.array_length < 1] {
+    print_help()
+}

@@ -1,0 +1,50 @@
+//@Name Logging
+//@Desc Simple logging library
+//@Version 1.0
+
+//@guide To use, load with <code>require</code>. You cannot simply use Rtfl's <code>load</code> function.
+
+//@depend require
+//@depend colors
+require("colors")
+
+//@desc Logs a mesage at the INFO level
+//@param mst The message to log
+//@since 1.0
+func log_info {
+	print(effect_bold)
+	print(bg_green)
+	print(" INFO ")
+	print(effect_reset)
+	print(bg_nc)
+	print("  ")
+	println(arg1)
+}
+
+//@desc Logs a mesage at the WARN level
+//@param mst The message to log
+//@since 1.0
+func log_warn {
+	print(effect_bold)
+	print(bg_yellow)
+	print(color_black)
+	print(" WARN ")
+	print(effect_reset)
+	print(bg_nc)
+	print(color_nc)
+	print("  ")
+	println(arg1)
+}
+
+//@desc Logs a mesage at the ERROR level
+//@param mst The message to log
+//@since 1.0
+func log_error {
+	print(effect_bold)
+	print(bg_red)
+	print(" ERROR ")
+	print(effect_reset)
+	print(bg_nc)
+	print(" ")
+	println(arg1)
+}

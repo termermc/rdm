@@ -1,0 +1,72 @@
+// Returns an array starting at the specified index
+func sub_array(array, start) {
+    local arr = array()
+    
+    local i = start
+    while [i < array.array_length] {
+        arr.array_add(array[i])
+        inc("i")
+    }
+    
+    return arr
+}
+
+// Returns the follow text, but with bold escape characters
+func bold(txt) {
+    return effect_bold.concat(txt).concat(effect_reset)
+}
+
+// Returns an index corresponding to the provided selection ID, or null if invalid
+func selection_id_to_index(id, default, min, max) {
+    local index = null
+    local real_id = id
+
+    if [id.type = "string"] {
+        error err {
+            real_id = id.to_number
+        }
+        if ![err = "ok"] {
+            real_id = default
+
+            if ![id = ""] {
+                real_id = null
+            }
+        }
+    }
+
+    if ![real_id = null] {
+        if ![real_id < min] {
+            if ![real_id > max] {
+                index = real_id.sub(1)
+            }
+        }
+    }
+
+    return index
+}
+
+// Returns the highest number from an array of numbers
+func highest(numbers) {
+    local highest = null
+
+    local i = 0
+    local len = numbers.array_length
+    while [i < len] {
+        local num = numbers[i]
+
+        if [num.type = "string"] {
+            num = num.to_string
+        }
+
+        if [highest = null] {
+            highest = num
+        }
+        if [num > highest] {
+            highest = num
+        }
+
+        inc("i")
+    }
+
+    return highest
+}

@@ -1,0 +1,211 @@
+//@Name Windows
+//@Desc Library to draw dialogs in the terminal
+//@Version 1.1
+
+//@guide To use, load with the <code>require</code> library. You cannot simply load with Rtfl's <code>load</code> function.
+
+//@depends require
+//@depends colors
+
+require("colors")
+require("commons")
+
+func trim_text {
+	local txt = arg1
+	local len = string_length(txt)
+	if [len < w] {
+		less = true
+		while [len < w] {
+			len = string_length(txt)
+			txt = concat(txt, " ")
+		}
+	}
+	if ![less] {
+		txt = substring(txt, 0, w)
+	}
+	return txt
+}
+
+//@desc Draws a window dialog in the terminal
+//@param x The x coordinate to draw
+//@param y The y coordinate to draw
+//@param width The width of the window
+//@param height The height of the window
+//@param text The text to draw inside of the window
+//@param color The window text color to draw
+//@param bg The window background color to draw
+//@since 1.0
+func window {
+	local bg_statement = concat("return bg_", arg6)
+	local default_bg = eval(bg_statement)
+	local color_statement = concat("return color_", arg7)
+	local default_color = eval(color_statement)
+	
+	local x = arg1
+	local y = arg2
+	local w = arg3
+	local h = arg4
+	local text = arg5
+	local texts = array()
+	array_add(texts, text)
+	if contains(text, "\n") {
+		texts = split(text, "\n")
+	}
+	local txtlen = array_length(texts)
+	local less = false
+	
+	// Pretrim texts
+	local inx = 0
+	while [inx < txtlen] {
+		local trim = trim_text(array_get(texts, inx))
+		array_set(texts, inx, trim)
+		inx = add(inx, 1)
+	}
+	local i = 0
+	while [i < y] {
+		println()
+		
+		i = add(i, 1)
+	}
+	local hI = 0
+	while [hI < h] {
+		//  do x offset
+		local xI = 0
+		while [xI < x] {
+			print(" ")
+			xI = add(xI, 1)
+		}
+		local wI = 0
+		while [wI < w] {
+			local char = " "
+			print(default_bg)
+			print(default_color)
+			if [hI = 0] {
+				print(bg_nc)
+				print(color_nc)
+				char = "="
+			}
+			local condition1 = more_than(hI, 0)
+			local condition2 = less_than(hI, h)
+			
+			if [condition1 & condition2] {
+				local index = sub(hI, 1)
+				if [index < txtlen] {
+					local text = array_get(texts, index)
+					if [wI > 0] {
+						local index = sub(wI, 1)
+						char = char_at(text, index)
+					}
+				}
+			}
+			local last = sub(h, 1)
+			if [hI = last] {
+				print(bg_nc)
+				print(color_nc)
+				char = "="
+			}
+			if [wI = 0] {
+				print(bg_nc)
+				print(color_nc)
+				char = "|"
+			}
+			last = sub(w, 1)
+			if [wI = last] {
+				print(bg_nc)
+				print(color_nc)
+				char = "|"
+			}
+			print(char)
+			
+			wI = add(wI, 1)
+		}
+		println()
+		
+		hI = add(hI, 1)
+	}
+	print(bg_nc)
+	print(color_nc)
+	print(effect_reset)
+}
+
+//@desc Draws a confirm query box
+//@param x The x coordinate to draw
+//@param y The y coordinate to draw
+//@param text The text to draw inside of the window
+//@param close Whether to close the terminal after receiving input
+//@param color The text color
+//@param bg The background color
+//@return Whether the user typed "y"/"yes"
+//@since 1.1
+func confirm {
+	open_terminal()
+	
+	local close = arg4
+	local x = arg1
+	local y = arg2
+	local text = concat(arg3, "\n\ny/n")
+	local arr = split(text, "\n")
+	local len = array_length(arr)
+	
+	local w = 0
+	local h = add(len, 2)
+	local i = 0
+	while [i < len] {
+		local txt = array_get(arr, i)
+		local strlen = string_length(txt)
+		if [strlen > w] {
+			w = strlen
+		}
+		i = add(i, 1)
+	}
+	w = add(w, 2)
+	
+	window(x, y, w, h, text, arg5, arg6)
+	print("> ")
+	local val = read_terminal()
+	return [val = "y"]
+	
+	if close {
+		close_terminal()
+	}
+}
+
+//@desc Draws a query box
+//@param x The x coordinate to draw
+//@param y The y coordinate to draw
+//@param text The text to draw inside of the window
+//@param close Whether to close the terminal after receiving input
+//@param color The text color
+//@param bg The background color
+//@return The input of the user
+//@since 1.1
+func input {
+	open_terminal()
+	
+	local close = arg4
+	local x = arg1
+	local y = arg2
+	local text = arg3
+	local arr = split(text, "\n")
+	local len = array_length(arr)
+	
+	local w = 0
+	local h = add(len, 2)
+	local i = 0
+	while [i < len] {
+		local txt = array_get(arr, i)
+		local strlen = string_length(txt)
+		if [strlen > w] {
+			w = strlen
+		}
+		i = add(i, 1)
+	}
+	w = add(w, 2)
+	window(x, y, w, h, text, arg5, arg6)
+	print("> ")
+	return read_terminal()
+	
+	if close {
+		close_terminal()
+	}
+}

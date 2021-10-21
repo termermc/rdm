@@ -1,0 +1,19 @@
+// Displays a prompt and returns the input
+func prompt(msg) {
+    open_terminal()
+    println(msg)
+    print("> ")
+    print(effect_bold)
+    
+    return read_terminal()
+    print(effect_reset)
+}
+
+// Displays a prompt for a yes/no question, returning if yes was chosen
+func prompt_bool(msg) {
+    open_terminal()
+    println(msg)
+    print("[y/N] ")
+    
+    return [read_terminal() = "y"]
+}

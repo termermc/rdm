@@ -1,0 +1,11 @@
+{
+ "name": "rdm",
+ "version": "1.0",
+ "dependencies": {
+  "logging": "1.0",
+  "progress_bar": "1.0",
+  "windows": "1.0",
+  "colors": "1.0",
+  "commons": "1.1"
+ }
+}

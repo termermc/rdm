@@ -1,0 +1,53 @@
+//@Name Progress Bar
+//@Desc A library to draw progress bars
+//@Version 1.0
+
+//@guide To use, load with the <code>require</code> library. You cannot simply use Rtfl's <code>load</code> function.
+
+//@depends require
+//@depends colors
+//@depends commons
+
+require("colors")
+require("commons")
+
+def _PG_w = 0
+def _PG_p = 0
+def _PG_c = bg_green
+
+def _PG_first_render = true
+
+//@desc Renders the progress bar
+//@since 1.0
+func render_progress_bar {
+	println()
+	print(dir_up)
+	print(_PG_c)
+	local stmt = "print(\" \")";
+	if [_PG_p > _PG_w] {
+		_PG_p = _PG_w;
+	}
+	repeat(stmt, _PG_p)
+	local space = sub(_PG_w, _PG_p)
+	print(bg_white)
+	repeat(stmt, space)
+	print(bg_nc);
+}
+
+//@desc Initializes the progress bar
+//@param width The width of the progress bar
+//@param color The name of the color to set the progress bar
+//@since 1.0
+func progress_bar {
+	_PG_w = arg1
+	local stmt = concat("return bg_", arg2)
+	_PG_c = eval(stmt)
+}
+
+//@desc Sets the progress of the progress bar
+//@param progress The progress of the progress bar
+//@since 1.0
+func set_progress {
+	_PG_p = arg1
+	render_progress_bar()
+}

@@ -1,0 +1,12 @@
+// Reads a URL and returns its response
+func url(url) {
+	local file = url.starts_with("file://")
+	local res = null
+	if file {
+		res = read_file(url.substring(7))
+	}
+	if ![file] {
+		res = read_http(url)
+	}
+	return res
+}

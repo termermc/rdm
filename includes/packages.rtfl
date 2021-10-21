@@ -1,0 +1,59 @@
+// The packages database
+def PACKAGES = map()
+
+// Checks if a package is installed
+func is_installed(package) {
+    return PACKAGES.map_contains_key(package)
+}
+
+// Loads packages from database
+func load_packages {
+    local pkg_file = system_property("user.home")
+    pkg_file = pkg_file.concat("/.rdm/packages.json")
+    local pkgs = pkg_file.read_file.from_json
+    
+    PACKAGES = pkgs->packages
+}
+
+// Writes packages database to disk
+func write_packages {
+    local pkg_file = system_property("user.home")
+    pkg_file = pkg_file.concat("/.rdm/packages.json")
+    local pkgs = map()
+    pkgs->version = VERSION
+    pkgs->packages = PACKAGES
+    
+    pkg_file.write_file(pkgs.to_json)
+}
+
+// Creates a new package map
+func package(name, dependencies) {
+    local pkg = map()
+    pkg->name = name
+    pkg->dependencies = dependencies
+    
+    return pkg
+}
+
+// Adds a new package to the database 
+func add_package(package) {
+    local pkg = map()
+    pkg->packages = package->packages
+    PACKAGES.map_put(package->name, pkg)
+}
+
+// Removes a package from the database, and removes its files
+func remove_packages(name) {
+    if is_installed(name) {
+        PACKAGES.map_remove(name)
+        write_packages()
+        
+        // Delete package file
+        local file = system_property("user.home")
+        file = file.concat("/.rdm/packages/").concat(name).concat(".rtfl")
+        delete_file(file)
+    }
+    if ![is_installed(name)] {
+        throw("Package ".concat(name).concat(" does not exist"))
+    }
+}

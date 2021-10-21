@@ -1,0 +1,1 @@
+exec("rtfl", "main.rtfl", "-cep", "--out=rdm.rtfc")

@@ -1,0 +1,107 @@
+// Repositories
+def REPOS = array()
+
+// Fetches info from a repository URL, or returns an error if it failed
+func fetch_repo_info(url) {
+	return url(url.concat("info")).from_json
+}
+
+// Fetches info about a package, or returns an error if the package doesn't exist or if it failed
+func fetch_package_info(url, name) {
+	local _url = url.concat(name).concat("/info")
+	return url(_url).from_json
+}
+
+// Loads all Repositories
+func load_repos {
+	println("Loading repositories...")
+	
+    local repo_file = system_property("user.home")
+    repo_file = repo_file.concat("/.rdm/packages.json")
+    local repo = repo_file.read_file.from_json
+
+    local i = 0
+    local urls = repo->repositories
+    while [i < urls.array_length] {
+		local url = urls[i]
+		error err {
+			local r = fetch_repo_info(url)
+			r->url = url
+			REPOS.array_add(r)
+		}
+		if ![err = "ok"] {
+			log_warn("Could not load repository ".concat(url).concat(":"))
+			log_warn(err)
+		}
+		inc("i")
+    }
+}
+
+// Returns if the specified package exists in a remote repository
+func repo_package_exists(name) {
+	local exists = false
+	local i = 0
+	// Loop through all repos, but stop when the package is found
+	while [[i < REPOS.array_length] & ![exists]] {
+		local url = REPOS[i]->url
+		error err {
+			// Try to connect to info route
+			url.concat(name).concat("/info").url
+
+			// If it got past that call, it exists
+			exists = true
+		}
+		inc("i")
+	}
+	return exists
+}
+
+// Returns an array of maps with info and URLs for the specified package.
+// Array will be empty if the package cannot be found in any repositories.
+func repo_package_info(name) {
+	local infos = array()
+	local i = 0
+	while [i < REPOS.array_length] {
+		local repo = REPOS[i]
+		local repo_url = repo->url
+		local info_url = repo_url.concat(name).concat("/info")
+		error err {
+			// Fetch info
+			local info = info_url.url.from_json
+
+			// Put repo data
+			info->repo = repo
+			// Put package URL
+			info->package_url = repo_url.concat(name).concat("/")
+			
+			infos.array_add(info)
+		}
+		inc("i")
+	}
+	return infos
+}
+
+// Returns an array of all package versions available in the provided package info array
+func repo_package_versions_from_info_array(array) {
+	local vers = array()
+
+	local len = array.array_length
+	local i = 0
+	while [i < len] {
+		local info = array[i]
+		local pvers = info->versions
+
+		local vlen = pvers.array_length
+		local j = 0
+		while [j < vlen] {
+			local ver = pvers[j]
+			if ![vers.array_contains(ver)] {
+				vers.array_add(ver)
+			}
+			inc("j")
+		}
+		inc("i")
+	}
+
+	return vers
+}
