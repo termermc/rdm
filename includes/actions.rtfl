@@ -261,7 +261,7 @@ func rdm_run_project_script(script_name) {
 	if ![script_path = null] {
         // Make extra arguments available to script
 		local args = array()
-        if [argslen > 1] {
+        if [arglen > 1] {
             args = arg2
         }
 
