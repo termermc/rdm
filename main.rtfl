@@ -8,7 +8,7 @@ def VERSION = 1.0
 // Load includes
 load("includes/utils.rtfl")
 load("includes/url.rtfl")
-load("includes/actions.rtfl")
+load("includes/api.rtfl")
 load("includes/commands.rtfl")
 load("includes/packages.rtfl")
 load("includes/repos.rtfl")

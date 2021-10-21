@@ -274,3 +274,38 @@ func rdm_run_project_script(script_name) {
 		}
 	}
 }
+
+// Returns an array containing names of all scripts in the current project's directory
+func rdm_project_scripts {
+	local names = array()
+
+	if is_directory("scripts/") {
+		local scripts = list_files("scripts/")
+		local len = scripts.array_length
+		local i = 0
+		while [i < len] {
+			local script = scripts[i]
+
+			if is_file(concat("scripts/", script)) {
+				local ok = false
+
+				if script.ends_with(".rtfl") {
+					ok = true
+				}
+				if script.ends_with(".rtfc") {
+					ok = true
+				}
+
+				if ok {
+					local dot = script.index_of(".")
+					local name = script.substring(0, dot)
+					names.array_add(name)
+				}
+			}
+
+			inc("i")
+		}
+	}
+
+	return names
+}

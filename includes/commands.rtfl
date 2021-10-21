@@ -18,34 +18,15 @@ func handle_command(cmd, args) {
     		println("Usage: rdm run <script>")
 
             // Print available scripts
-            if is_directory("scripts/") {
-                local scripts = list_files("scripts/")
-                local len = scripts.array_length
-                if [len > 0] {
-                    println("Available scripts:")
-                    local i = 0
-                    while [i < len] {
-                        local script = scripts[i]
-
-                        if is_file(concat("scripts/", script)) {
-                            local ok = false
-
-                            if script.ends_with(".rtfl") {
-                                ok = true
-                            }
-                            if script.ends_with(".rtfc") {
-                                ok = true
-                            }
-
-                            if ok {
-                                local dot = script.index_of(".")
-                                println(script.substring(0, dot))
-                            }
-                        }
-
-                        inc("i")
-                    }
-                }
+         	local scripts = rdm_project_scripts()
+         	local len = scripts.array_length
+         	if [len > 0] {
+            	println("Available scripts:")
+            	local i = 0
+            	while [i < len] {
+            		println(scripts[i])
+            		inc("i")
+            	}
             }
     	}
     	if ![help] {
